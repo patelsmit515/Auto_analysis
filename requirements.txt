@@ -3,5 +3,3 @@ uvicorn[standard]
 pandas
 duckdb
 python-multipart
-pytest
-httpx
