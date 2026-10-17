@@ -1,6 +1,3 @@
-
-"""Load and inspect CSV datasets."""
-
 import json
 from pathlib import Path
 

@@ -1,6 +1,3 @@
-
-"""Validate datasets before processing."""
-
 def validate_data(df):
     """Return errors and warnings about a dataset."""
 
