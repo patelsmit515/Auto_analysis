@@ -1,4 +1,3 @@
-
 from src.data_loader import load_csv
 from src.sql_engine import run_query
 

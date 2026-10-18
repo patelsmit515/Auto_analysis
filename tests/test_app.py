@@ -1,4 +1,3 @@
-
 from backend.app import app
 
 print("\n--- Application ---")
