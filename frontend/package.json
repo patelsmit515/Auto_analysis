@@ -1,0 +1,21 @@
+{
+  "name": "auto-analysis-frontend",
+  "version": "1.0.0",
+  "description": "Clean, local-first frontend for Auto_analysis data cleaning and SQL application",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 3000 --directory . --bind 127.0.0.1",
+    "dev": "python -m http.server 3000 --directory . --bind 127.0.0.1",
+    "serve": "python -m http.server 3000 --directory . --bind 127.0.0.1"
+  },
+  "keywords": [
+    "data-analysis",
+    "sql",
+    "pandas",
+    "duckdb",
+    "local-first",
+    "fastapi"
+  ],
+  "author": "Auto_analysis Team",
+  "license": "MIT"
+}

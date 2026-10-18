@@ -1,6 +1,7 @@
-
 """Clean and transform datasets using Pandas."""
 
+import json
+import re
 import pandas as pd
 
 
@@ -49,10 +50,75 @@ def fill_missing_values(
     return cleaned_df
 
 
-def remove_duplicates(df):
-    """Remove duplicate rows."""
+def detect_duplicates(df, subset=None, keep="first"):
+    """Detect duplicate rows based on all or selected columns."""
 
-    return df.drop_duplicates().reset_index(drop=True)
+    if subset is not None:
+        missing = [c for c in subset if c not in df.columns]
+        if missing:
+            raise ValueError(f"Columns not found: {missing}")
+
+    keep_param = False if keep == "none" else keep
+    mask = df.duplicated(subset=subset, keep=keep_param)
+
+    # All duplicates including original instance for inspection
+    all_mask = df.duplicated(subset=subset, keep=False)
+    dup_df = df[all_mask].copy()
+    dup_df["_row_index"] = dup_df.index
+
+    return {
+        "duplicate_count": int(mask.sum()),
+        "total_rows": len(df),
+        "columns": subset if subset is not None else list(df.columns),
+        "keep": keep,
+        "duplicate_rows": json.loads(dup_df.to_json(orient="records", date_format="iso")),
+    }
+
+
+def remove_duplicates(df, subset=None, keep="first"):
+    """Remove duplicate rows based on all or selected columns."""
+
+    if subset is not None:
+        missing = [c for c in subset if c not in df.columns]
+        if missing:
+            raise ValueError(f"Columns not found: {missing}")
+
+    keep_param = False if keep == "none" else keep
+    return df.drop_duplicates(subset=subset, keep=keep_param).reset_index(drop=True)
+
+
+def edit_cell(df, row_index, column, new_value):
+    """Edit a single cell value in a DataFrame with type validation."""
+
+    if column not in df.columns:
+        raise ValueError(f"Column '{column}' does not exist.")
+
+    if row_index < 0 or row_index >= len(df):
+        raise ValueError(f"Row index {row_index} is out of bounds (0 to {len(df) - 1}).")
+
+    result = df.copy()
+    col_type = result[column].dtype
+
+    if new_value is None or (isinstance(new_value, str) and new_value.strip() == ""):
+        parsed_value = pd.NA if str(col_type).startswith("Int") or str(col_type).startswith("string") else None
+    elif pd.api.types.is_numeric_dtype(result[column]):
+        try:
+            if "." in str(new_value):
+                parsed_value = float(new_value)
+            else:
+                parsed_value = int(new_value)
+        except (ValueError, TypeError) as err:
+            raise ValueError(f"Cannot convert value '{new_value}' to numeric for column '{column}': {err}")
+    elif pd.api.types.is_datetime64_any_dtype(result[column]):
+        try:
+            parsed_value = pd.to_datetime(new_value)
+        except Exception as err:
+            raise ValueError(f"Cannot convert value '{new_value}' to datetime for column '{column}': {err}")
+    else:
+        parsed_value = str(new_value)
+
+    result.iat[row_index, result.columns.get_loc(column)] = parsed_value
+    return result
 
 
 def rename_columns(df, column_mapping):
@@ -91,8 +157,11 @@ def convert_column_type(df, column, data_type):
         cleaned_df[column] = cleaned_df[column].astype("string")
 
     elif data_type == "datetime":
-        cleaned_df[column] = pd.to_datetime(
-            cleaned_df[column], errors="raise"
+        cleaned_df = convert_datetime_column(
+            cleaned_df,
+            column=column,
+            date_format=None,
+            errors="coerce",
         )
 
     else:
@@ -150,12 +219,17 @@ def split_column(
     keep_original=True,
     max_splits=-1,
 ):
-    """Split a column into multiple columns using a separator or regex."""
+    """Split a column into multiple columns using a separator, list of separators, or regex."""
 
     if column not in df.columns:
         raise ValueError(f"Column '{column}' does not exist.")
 
-    if not isinstance(separator, str) or not separator:
+    if isinstance(separator, (list, tuple)):
+        if not separator:
+            raise ValueError("The separator list cannot be empty.")
+        separator = "|".join(re.escape(s) for s in separator)
+        regex = True
+    elif not isinstance(separator, str) or not separator:
         raise ValueError("The separator or regex pattern cannot be empty.")
 
     if max_splits < -1:
@@ -272,8 +346,9 @@ def convert_datetime_column(
 ):
     """Convert a column to datetime, optionally creating a new column.
 
-    Invalid values become missing values with errors='coerce'.
-    Use errors='raise' to reject invalid values.
+    - Automatically infers common ISO/standard formats when date_format is None/empty.
+    - If errors='coerce', invalid values become missing values (NaT).
+    - If errors='raise', conversion is rejected with a descriptive explanation.
     """
 
     if column not in df.columns:
@@ -290,12 +365,57 @@ def convert_datetime_column(
         )
 
     result = df.copy()
+    raw = result[column]
 
-    result[target_column] = pd.to_datetime(
-        result[column],
-        format=date_format,
-        errors=errors,
-    )
+    fmt = date_format.strip() if (isinstance(date_format, str) and date_format.strip()) else None
+
+    if errors == "raise":
+        try:
+            if fmt:
+                result[target_column] = pd.to_datetime(
+                    raw,
+                    format=fmt,
+                    errors="raise",
+                )
+            else:
+                result[target_column] = pd.to_datetime(
+                    raw,
+                    format="mixed",
+                    errors="raise",
+                )
+        except Exception as err:
+            # Diagnose which values failed
+            test_res = pd.to_datetime(raw, format=fmt if fmt else "mixed", errors="coerce")
+            non_empty = raw.notna() & (raw.astype(str).str.strip().ne(""))
+            failed_mask = non_empty & test_res.isna()
+            failed_samples = raw.loc[failed_mask].unique().tolist()[:5]
+            samples_str = ", ".join(f'"{s}"' for s in failed_samples)
+            count = int(failed_mask.sum())
+            raise ValueError(
+                f"Conversion rejected: column '{column}' contains {count} invalid date value(s) "
+                f"such as [{samples_str}]. Choose 'Convert invalid values to missing values' (Coerce) "
+                f"to convert them to nulls safely, or provide a matching format."
+            ) from err
+    else:  # errors == "coerce"
+        if fmt:
+            try:
+                result[target_column] = pd.to_datetime(
+                    raw,
+                    format=fmt,
+                    errors="coerce",
+                )
+            except Exception:
+                result[target_column] = pd.to_datetime(
+                    raw,
+                    format="mixed",
+                    errors="coerce",
+                )
+        else:
+            result[target_column] = pd.to_datetime(
+                raw,
+                format="mixed",
+                errors="coerce",
+            )
 
     return result
 
@@ -352,9 +472,10 @@ def extract_datetime_parts(
             f"These output columns already exist: {conflicts}"
         )
 
+    fmt = date_format.strip() if (isinstance(date_format, str) and date_format.strip()) else None
     dates = pd.to_datetime(
         df[column],
-        format=date_format,
+        format=fmt if fmt else "mixed",
         errors="coerce",
     )
 

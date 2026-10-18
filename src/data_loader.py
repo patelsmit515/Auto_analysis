@@ -1,6 +1,6 @@
-
 """Load and inspect CSV datasets."""
 
+import io
 import json
 from pathlib import Path
 
@@ -10,13 +10,57 @@ from src.config import PREVIEW_ROWS, SUPPORTED_FILE_TYPE
 
 
 def load_csv(file_source):
-    """Load a CSV file from a path or file-like object."""
+    """Load a CSV file from a path or file-like object with validation against HTML and non-CSV files."""
 
+    # 1. Check path extension
     if isinstance(file_source, (str, Path)):
-        if Path(file_source).suffix.lower() != SUPPORTED_FILE_TYPE:
-            raise ValueError("Only CSV files are supported.")
+        path = Path(file_source)
+        if path.suffix.lower() != SUPPORTED_FILE_TYPE:
+            raise ValueError("Only CSV files (.csv) are supported. Please upload a valid CSV file.")
 
-    return pd.read_csv(file_source)
+        with open(path, "rb") as f:
+            sample_bytes = f.read(2048)
+    elif hasattr(file_source, "read"):
+        sample_bytes = file_source.read(2048)
+        if hasattr(file_source, "seek"):
+            file_source.seek(0)
+    else:
+        sample_bytes = b""
+
+    # 2. Check for binary / null bytes
+    if b"\x00" in sample_bytes:
+        raise ValueError("The file contains binary data and cannot be parsed as a plain-text CSV dataset.")
+
+    # 3. Check for HTML or XML markers
+    sample_text = sample_bytes.decode("utf-8", errors="ignore").lower().strip()
+    html_signatures = [
+        "<!doctype html",
+        "<html",
+        "<head",
+        "<body",
+        "<?xml",
+        "<meta",
+        "<title",
+        "<script",
+    ]
+    for sig in html_signatures:
+        if sig in sample_text:
+            raise ValueError(
+                "The uploaded file appears to be an HTML webpage or markup document, not a valid CSV dataset. "
+                "Please upload a plain-text comma-separated values (.csv) file."
+            )
+
+    try:
+        df = pd.read_csv(file_source)
+    except pd.errors.EmptyDataError as err:
+        raise ValueError("The uploaded CSV file is completely empty.") from err
+    except Exception as err:
+        raise ValueError(f"Could not parse the file as a valid CSV: {err}") from err
+
+    if len(df.columns) == 0:
+        raise ValueError("The CSV file contains no columns.")
+
+    return df
 
 
 def inspect_data(df):
