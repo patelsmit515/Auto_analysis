@@ -4,18 +4,27 @@
 from io import BytesIO
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from pydantic import BaseModel, Field
 
 from src.config import PROJECT_NAME
 from src.data_loader import load_csv, inspect_data
 from src.validation import validate_data
 from src.charts import prepare_chart
+from src.sql_helper import get_sql_reference, suggest_sql
 
 
 app = FastAPI(
     title=PROJECT_NAME,
-    description="A data cleaning and SQL analysis application.",
+    description="A local data cleaning and SQL analysis application.",
     version="1.0.0",
 )
+
+
+class SQLHelperRequest(BaseModel):
+    """Input for SQL autocomplete suggestions."""
+
+    query: str = ""
+    schemas: dict[str, list[str]] = Field(default_factory=dict)
 
 
 @app.get("/")
@@ -103,3 +112,22 @@ async def create_chart(
             status_code=400,
             detail=f"Could not create chart: {error}",
         ) from error
+
+
+@app.get("/api/sql-reference")
+def sql_reference(term: str | None = None):
+    """Return SQL syntax references, optionally filtered by a search term."""
+
+    return {
+        "references": get_sql_reference(term),
+    }
+
+
+@app.post("/api/sql-helper")
+def sql_helper(request: SQLHelperRequest):
+    """Return SQL autocomplete suggestions for the current query."""
+
+    return suggest_sql(
+        query=request.query,
+        schemas=request.schemas,
+    )

@@ -1,0 +1,13 @@
+Student_ID,Full_Name,Age,City,Score,Registration_Date,Course_ID,Skills,Notes
+S001,Asha Patel,20,Surat,85,2025-08-14 16:35:20,C01,Python;SQL,Good progress
+S002,Rahul Shah,21,Mumbai,90,2024-01-05 09:15:00,C02,"Python,Excel",Excellent
+S003,Priya Desai,,Surat,88,2025-03-22 11:45:30,C01,Power-BI;Excel,
+S004,Aman Mehta,23,Ahmedabad,78,2025-06-10 14:20:00,C03,SQL;Python,Needs practice
+S005,Neha Joshi,22,Vadodara,not_available,2025-09-01 08:10:00,C02,"Excel,Power-BI",Score needs checking
+S006,Karan Patel,24,,92,2024-11-19 17:05:45,C01,Python;Power-BI,Good progress
+S007,Diya Shah,19,Surat,76,invalid-date,C04,Excel;SQL,Check registration date
+S008,Mehul Desai,25,Mumbai,81,2025-02-28 12:00:00,C02,Python-Excel, 
+S009,Aman Mehta,23,Ahmedabad,78,2025-06-10 14:20:00,C03,SQL;Python,Needs practice
+S010,Riya Mehta,20,Surat,95,2025-12-31 23:59:59,C01,"Python;SQL,Excel",Multiple skills
+S011,Jay Patel,27,Pune,84,2023-07-15 10:30:00,C99,Power-BI;SQL,Unknown course ID
+S012,,22,Mumbai,67,2025-04-18 07:45:10,C03,Excel;Python,Missing student name
