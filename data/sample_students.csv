@@ -1,6 +1,6 @@
-Name,Age,City,Score
-Asha,20,Surat,85
-Rahul,21,Mumbai,90
-Priya,,Surat,88
-Rahul,21,Mumbai,90
-Aman,23,,78
+Name,Age,City,Score,Registration_Date
+Asha Patel,20,Surat,85,2025-08-14 16:35:20
+Rahul Shah,21,Mumbai,90,2024-01-05 09:15:00
+Priya Desai,,Surat,88,2025-03-22 11:45:30
+Rahul Shah,21,Mumbai,90,2024-01-05 09:15:00
+Aman Mehta,23,,78,invalid-date
