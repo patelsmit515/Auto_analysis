@@ -1,0 +1,114 @@
+# =============================================================================
+# Auto_analysis - Git Ignore Configuration
+# =============================================================================
+
+# --- Python Bytecode & Cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# --- C Extensions ---
+*.so
+*.dylib
+*.dll
+
+# --- Virtual Environments ---
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+pythonenv*
+.env/
+
+# --- Environment Variables & Secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# --- Testing & Coverage ---
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+.cache/
+coverage.xml
+nosetests.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# --- Distribution & Build Artifacts ---
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- PyInstaller / Executables ---
+*.manifest
+*.spec
+
+# --- Node / Frontend Artifacts ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- Database & Local Runtime Files ---
+*.duckdb
+*.duckdb.wal
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# --- Generated Export & Test Output Files ---
+# Preserves data/sample_students.csv, data/test_courses.csv, data/test_workflow.csv
+data/cleaned_*.csv
+data/exports/
+data/temp/
+*.tmp
+*.temp
+
+# --- IDEs & Code Editors ---
+.vscode/
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-workspace
+*.sublime-project
+
+# --- Operating System Files ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
